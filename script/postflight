@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+## Deferred installations
+# MariaDB
+
+brew unlink mysql
+brew bundle --file=- <<EOF
+brew 'mariadb'
+EOF
+brew services start mariadb
+
+# default Browser --> Chrome
+
+
+# default search in Firefox --> Google
+
+
+### Login Items
+## Apps
+# iTerm2
+# Seil
+# Spectacle
+
+### Cleanup
+brew linkapps
+brew cleanup -s
+brew cask cleanup
+

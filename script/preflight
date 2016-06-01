@@ -1,0 +1,16 @@
+#!/bin/bash
+#
+## MAS - Mac App Store
+# install and signin ahead of global ~/.Brewfile call
+
+log "Checking for MAS:"
+if [[ "$(mas version)" ]]; then logk; else 
+  log "MAS not found."
+  logn "Installing MAS with Homebrew..."
+  brew install mas && logk
+fi
+
+if [[ "${REMDOT_ICLOUD_LOGIN}" != "$(mas account)" ]]; then
+  mas signout && mas signin "${REMDOT_ICLOUD_LOGIN}" "${REMDOT_ICLOUD_PW}"
+fi
+

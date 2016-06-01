@@ -1,0 +1,361 @@
+#!/bin/bash
+#
+# script/setup: Set up RemDot for the first time after cloning, or set it
+#               back to the initial first unused state.
+
+set -e
+
+# Keep sudo timestamp updated while Remdot is running.
+if [ "$1" = "--sudo-wait" ]; then
+  while true; do
+    mkdir -p "/var/db/sudo/${SUDO_USER}"
+    touch "/var/db/sudo/${SUDO_USER}"
+    sleep 1
+  done
+  exit 0
+fi
+
+[ "$1" = "--debug" ] && REMDOT_DEBUG="1"
+REMDOT_SUCCESS=""
+
+cleanup() {
+  set +e
+  if [ -n "${REMDOT_SUDO_WAIT_PID}" ]; then
+    sudo kill "${REMDOT_SUDO_WAIT_PID}"
+  fi
+  sudo -k
+  rm -f "${CLT_PLACEHOLDER}"
+  if [ -z "${REMDOT_SUCCESS}" ]; then
+    if [ -n "${REMDOT_STEP}" ]; then
+      echo "!!! ${REMDOT_STEP} FAILED" >&2
+    else
+      echo "!!! FAILED" >&2
+    fi
+    if [ -z "${REMDOT_DEBUG}" ]; then
+      echo "!!! Run '$0 --debug' for debugging output." >&2
+      echo "!!! If you're stuck: file an issue with debugging output at:" >&2
+      echo "!!!   ${REMDOT_ISSUES_URL}" >&2
+    fi
+  fi
+}
+
+trap "cleanup" EXIT
+
+if [ -n "${REMDOT_DEBUG}" ]; then
+  set -x
+else
+  REMDOT_QUIET_FLAG="-q"
+  Q="${REMDOT_QUIET_FLAG}"
+fi
+
+STDIN_FILE_DESCRIPTOR="0"
+[ -t "${STDIN_FILE_DESCRIPTOR}" ] && REMDOT_INTERACTIVE="1"
+
+## File paths ##
+
+# Get executable as called
+SOURCE="${BASH_SOURCE[0]}"
+
+# Check for and resolve symlink executable calls to physical file location
+check_sym () {
+  local SRC="${SOURCE}"
+  # While $SRC is a symlink, resolve it
+  while [ -L "${SRC}" ]; do
+    local DIR
+    DIR="$( cd -P "$( dirname "${SRC}" )" && pwd )"
+    SRC="$( readlink "${SRC}" )"
+    # If $SRC was a relative symlink (so no "/" as prefix,
+    # need to resolve it relative to the symlink base directory
+    [[ ${SRC} != /* ]] && SRC="${DIR}/${SRC}"
+  done
+  echo "${SRC}"
+}
+REMDOT_SYM_SRC=$(check_sym)
+
+# Get physical script command, path and absolute path to project root
+REMDOT_RES_CMD="$(basename "${REMDOT_SYM_SRC}")"
+REMDOT_RES_DIR="$(cd -P "$(dirname "${REMDOT_SYM_SRC}")" && pwd)"
+REMDOT_RES_FULL="${REMDOT_RES_DIR}/${REMDOT_RES_CMD}"
+export REMDOT_RES_FULL
+REMDOT_PROJ_ROOT=$(cd "${REMDOT_RES_DIR}/.."; pwd)
+REMDOT_CONFIG_DIR="${REMDOT_PROJ_ROOT}/config"
+export REMDOT_CONFIG_DIR
+
+# Get executable absolute command name and path
+REMDOT_EXE_CMD="$( basename "${SOURCE}" )"
+REMDOT_EXE_DIR="$( cd "$( dirname "${SOURCE}" )" && pwd )"
+REMDOT_EXE_FULL="${REMDOT_EXE_DIR}/${REMDOT_EXE_CMD}"
+
+abort() { REMDOT_STEP="";   echo "!!! $*" >&2; exit 1; }
+log()   { REMDOT_STEP="$*"; echo "--> $*"; }
+logn()  { REMDOT_STEP="$*"; printf -- "--> $* "; }
+logk()  { REMDOT_STEP="";   echo "OK"; }
+
+# Check compatible OS X Version
+sw_vers -productVersion | grep $Q -E "^10.(9|10|11)" || {
+  abort "Run Remdot on Mac OS X 10.9/10/11."
+}
+
+# Prohibit running as root
+[ "${USER}" = "root" ] && abort "Run Remdot as yourself, not root."
+# Prohibit running as non-admin
+groups | grep $Q admin || abort "Add ${USER} to the admin group."
+
+# Initialise sudo now to save prompting later.
+log "Enter your password (for sudo access):"
+sudo -k
+sudo /usr/bin/true
+[ -f "${REMDOT_EXE_FULL}" ]
+sudo bash "${REMDOT_EXE_FULL}" --sudo-wait &
+REMDOT_SUDO_WAIT_PID="$!"
+ps -p "${REMDOT_SUDO_WAIT_PID}" &>/dev/null
+logk
+
+# Get local credentials
+log "Obtaining user credentials..."
+if [[ -r "${HOME}/.credentials" ]]; then
+  logn "Reading from local file:"
+  # shellcheck source=/dev/null
+  . "${HOME}/.credentials"
+  logk
+else
+# TODO: read user input if no credentials
+  abort "\$HOME/.credentials missing or unreadable"
+fi
+
+# Check and enable full-disk encryption.
+logn "Checking full-disk encryption status:"
+if fdesetup status\
+| grep $Q -E "FileVault is (On|Off, but will be enabled after the next restart)."
+then
+  logk
+elif [ -n "$REMDOT_CI" ]; then
+  echo
+  logn "Skipping full-disk encryption for CI"
+elif [ -n "$REMDOT_INTERACTIVE" ]; then
+  echo
+  logn "Enabling full-disk encryption on next reboot:"
+  sudo fdesetup enable -user "$USER" \
+    | tee ~/Desktop/"FileVault Recovery Key.txt"
+  logk
+else
+  echo
+  abort "Run 'sudo fdesetup enable -user \"$USER\"'"\
+  "to enable full-disk encryption."
+fi
+
+# Install the Xcode Command Line Tools.
+DEVELOPER_DIR=$("xcode-select" -print-path 2>/dev/null || true)
+[ -z "${DEVELOPER_DIR}" ] \
+ || ! [ -f "${DEVELOPER_DIR}/usr/bin/git" ] \
+ || ! [ -f "/usr/include/iconv.h" ] \
+ && {
+  log "Installing the Xcode Command Line Tools:"
+  CLT_PLACEHOLDER="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
+  sudo touch "$CLT_PLACEHOLDER"
+  CLT_PACKAGE=$(softwareupdate -l | \
+                grep -B 1 -E "Command Line (Developer|Tools)" | \
+                awk -F"*" '/^ +\*/ {print $2}' | sed 's/^ *//' | head -n1)
+  sudo softwareupdate -i "$CLT_PACKAGE"
+  sudo rm -f "$CLT_PLACEHOLDER"
+  if ! [ -f "/usr/include/iconv.h" ]; then
+    if [ -n "$REMDOT_INTERACTIVE" ]; then
+      echo
+      logn "Requesting user install of Xcode Command Line Tools:"
+      xcode-select --install
+    else
+      echo
+      abort "Run 'xcode-select --install'"\
+      "to install the Xcode Command Line Tools."
+    fi
+  fi
+  logk
+}
+
+# Check if the Xcode license is agreed to and agree if not.
+xcode_license() {
+  if /usr/bin/xcrun clang 2>&1 | grep $Q license; then
+    if [ -n "$REMDOT_INTERACTIVE" ]; then
+      logn "Asking for Xcode license confirmation:"
+      sudo xcodebuild -license
+      logk
+    else
+      abort "Run 'sudo xcodebuild -license' to agree to the Xcode license."
+    fi
+  fi
+}
+xcode_license
+
+# Setup Git configuration.
+logn "Configuring Git:"
+if [ -n "${REMDOT_GIT_NAME}" ] \
+&& [[ ! -n $(git config --get --global user.name) ]]
+then
+  git config --global user.name "${REMDOT_GIT_NAME}"
+fi
+
+if [ -n "${REMDOT_GIT_EMAIL}" ] \
+&& [[ ! -n $(git config --get --global user.email) ]]
+then
+  git config --global user.email "${REMDOT_GIT_EMAIL}"
+fi
+
+if [ -n "${REMDOT_GITHUB_USER}" ] \
+&& [[ ! -n $(git config --get --global github.user) ]]
+then
+  git config --global github.user "${REMDOT_GITHUB_USER}"
+fi
+
+# Squelch git 2.x warning message when pushing
+if ! git config push.default >/dev/null; then
+  git config --global push.default simple
+fi
+
+# Setup GitHub HTTPS credentials.
+if [ -n "${REMDOT_GITHUB_USER}" ] && [ -n "${REMDOT_GITHUB_TOKEN}" ] \
+  && git credential-osxkeychain 2>&1 | grep $Q "git.credential-osxkeychain"
+then
+  if [ "$(git config credential.helper)" != "osxkeychain" ]
+  then
+    git config --global credential.helper osxkeychain
+  fi
+  printf "protocol=https\nhost=github.com\n" | git credential-osxkeychain erase
+  printf "protocol=https\nhost=github.com\nusername=%s\npassword=%s\n" \
+        "${REMDOT_GITHUB_USER}" "${REMDOT_GITHUB_TOKEN}" \
+        | git credential-osxkeychain store
+fi
+logk
+
+# Setup Homebrew directories and permissions.
+logn "Installing Homebrew:"
+HOMEBREW_PREFIX="/usr/local"
+HOMEBREW_CACHE="/Library/Caches/Homebrew"
+for dir in "$HOMEBREW_PREFIX" "$HOMEBREW_CACHE"; do
+  [ -d "$dir" ] || sudo mkdir -p "$dir"
+  sudo chown -R "$USER:admin" "$dir"
+done
+
+# Download Homebrew.
+export GIT_DIR="$HOMEBREW_PREFIX/.git" GIT_WORK_TREE="$HOMEBREW_PREFIX"
+git init $Q
+git config remote.origin.url "https://github.com/Homebrew/brew"
+git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git fetch $Q origin master:refs/remotes/origin/master \
+  --no-tags --depth=1 --force --update-shallow
+git reset $Q --hard origin/master
+sudo chmod g+rwx "$HOMEBREW_PREFIX"/* "$HOMEBREW_PREFIX"/.??*
+unset GIT_DIR GIT_WORK_TREE
+logk
+
+# Update Homebrew.
+export PATH="$HOMEBREW_PREFIX/bin:$PATH"
+log "Updating Homebrew:"
+brew update
+logk
+
+# Install Homebrew Bundle, Cask, Services and Versions tap.
+log "Installing Homebrew taps and extensions:"
+brew bundle --file=- <<EOF
+tap 'caskroom/cask'
+tap 'homebrew/core'
+tap 'homebrew/services'
+tap 'homebrew/versions'
+EOF
+logk
+
+# Use pf packet filter to forward ports 80 and 443.
+logn "Forwarding local ports 80 to 8080 and 443 to 8443:"
+cat <<EOF | sudo tee /etc/pf.anchors/dev.remdot >/dev/null
+rdr pass inet proto tcp from any to any port 80 -> 127.0.0.1 port 8080
+rdr pass inet proto tcp from any to any port 443 -> 127.0.0.1 port 8443
+EOF
+sudo rm -f /etc/pf.anchors/dev.github 2>/dev/null
+sudo perl -pi \
+  -e 's/(rdr-anchor|load anchor) "dev\.(github|remdot)"( from "\/etc\/pf.anchors\/dev\.(github|remdot)")?\n//g;' \
+  -e 's/(rdr-anchor.*)/\1\nrdr-anchor "dev.remdot"/g;' \
+  -e 's|(load anchor.*)|\1\nload anchor "dev.remdot" from "/etc/pf.anchors/dev.remdot"|g;' \
+  /etc/pf.conf
+sudo launchctl unload /Library/LaunchDaemons/dev.remdot.pf.plist 2>/dev/null || true
+cat <<EOF | sudo tee /Library/LaunchDaemons/dev.remdot.pf.plist >/dev/null
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer/DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.remdot.pf.plist</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>ipconfig waitall &amp;&amp; /sbin/pfctl -e -f /etc/pf.conf</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ServiceDescription</key>
+  <string>FreeBSD Packet Filter (pf) daemon</string>
+  <key>StandardErrorPath</key>
+  <string>/var/log/pf.log</string>
+  <key>StandardOutPath</key>
+  <string>/var/log/pf.log</string>
+</dict>
+</plist>
+EOF
+sudo launchctl load -w /Library/LaunchDaemons/dev.remdot.pf.plist 2>/dev/null
+logk
+
+# shellcheck source=/dev/null
+source "${REMDOT_RES_DIR}/preflight"
+
+# Check and install any remaining software updates.
+logn "Checking for software updates:"
+if softwareupdate -l 2>&1 | grep $Q "No new software available."; then
+  logk
+else
+  echo
+  log "Installing software updates:"
+  if [ -z "$REMDOT_CI" ]; then
+    sudo softwareupdate --install --all
+    xcode_license
+  else
+    echo "Skipping software updates for CI"
+  fi
+  logk
+fi
+
+if [ -n "$REMDOT_GITHUB_USER" ]; then
+  REPO_URL="https://github.com/$REMDOT_GITHUB_USER/homebrew-brewfile"
+  REPO_API_URL="https://api.github.com/repos/$REMDOT_GITHUB_USER/homebrew-brewfile"
+  STATUS_CODE=$(curl -u "${REMDOT_GITHUB_USER}:${REMDOT_GITHUB_TOKEN}" --silent --write-out "%{http_code}" --output /dev/null "${REPO_API_URL}/contents/Brewfile")
+
+  if [ "$STATUS_CODE" -eq 200 ]; then
+    logn "Fetching user Brewfile from GitHub:"
+    if [ ! -d "${HOME}/.homebrew-brewfile" ]; then
+      git clone "${Q}" "${REPO_URL}" ~/.homebrew-brewfile
+    else
+      cd ~/.homebrew-brewfile
+      git pull $Q
+    fi
+    ln -sf ~/.homebrew-brewfile/Brewfile ~/.Brewfile
+    logk
+  fi
+fi
+
+# Install from local Brewfile
+if [ -f "$HOME/.Brewfile" ]; then
+  log "Installing from user Brewfile on GitHub:"
+  brew bundle -v --global
+  logk
+fi
+
+# Run script modules
+for script_module in ${REMDOT_RES_DIR}/modules/*; do
+#   shellcheck source=/dev/null
+    source "${script_module}"
+  done
+
+# shellcheck source=/dev/null
+source "${REMDOT_RES_DIR}/postflight"
+
+REMDOT_SUCCESS="1"
+log "Remdot setup successful"
+
