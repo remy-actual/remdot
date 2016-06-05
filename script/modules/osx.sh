@@ -24,9 +24,11 @@ config_macosx () {
   logk
 
   logn "Enable copy to clipboard from Quick Look view:"
-  if [[ $(defaults write com.apple.finder QLEnableTextSelection) != "TRUE" ]]; then
-  defaults write com.apple.finder QLEnableTextSelection -bool TRUE \
-  && killall Finder; fi
+  if [[ $(defaults read com.apple.finder QLEnableTextSelection) != "TRUE" ]]
+  then
+    defaults write com.apple.finder QLEnableTextSelection -bool TRUE &&\
+    killall Finder
+  fi
   logk
   #
   ## Keyboard
