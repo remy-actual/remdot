@@ -56,8 +56,11 @@ config_macosx () {
   killall SystemUIServer
   logk
 
-  logn "Adding Pictures shortcut to Desktop:"
-  ln -s "${HOME}/Pictures" "${HOME}/Desktop/Pictures"
+  logn "Checking for Pictures shortcut on Desktop:"
+  if [[ ! -L "${HOME}/Desktop/Pictures" ]]; then
+    logn "Adding Pictures shortcut to Desktop:"
+    ln -s "${HOME}/Pictures" "${HOME}/Desktop/Pictures"
+  fi
   logk
 }
 
