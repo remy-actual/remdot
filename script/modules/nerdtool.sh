@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-## Install NertTool app
+## Install NerdTool app
 # TODO: configure Qlock dynamic desktop background
 
 config_nerdtool () {
