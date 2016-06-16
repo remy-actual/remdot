@@ -28,7 +28,7 @@ config_vim () {
   fi
 
   log "Installing Vim plugings with Vundle:"
-  vim +PluginInstall +qall && logk
+  vim +PluginInstall! +qall && logk
 
   log "Vim setup complete!"
 
