@@ -43,6 +43,7 @@ Plugin 'fatih/vim-go'
 Plugin 'mattn/emmet-vim'
 Plugin 'jlanzarotta/bufexplorer'
 Plugin 'majutsushi/tagbar'
+Plugin 'mtscout6/syntastic-local-eslint.vim'
 Plugin 'tpope/vim-speeddating'
 Plugin 'tpope/vim-unimpaired'
 Plugin 'tpope/vim-fugitive'
@@ -381,6 +382,9 @@ let g:syntastic_html_tidy_exec = 'tidy'
 let syntastic_mode_map = { 'passive_filetypes': ['html'] }
 
 " Enable checkers by filetype
+let g:syntastic_javascript_checkers = ['eslint']
+" prefer locally installed npm project package over global
+" ref: https://github.com/mtscout6/syntastic-local-eslint.vim
 " let g:syntastic_sql_checkers = ['sqlint'] " default
 let g:syntastic_text_checkers = ['atdtool']
 let g:syntastic_vim_checkers = ['vint'] " vint instead of vimlint
