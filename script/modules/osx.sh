@@ -26,7 +26,7 @@ config_macosx () {
   logn "Display full path in Title Bar:"
   if [[ $(defaults read com.apple.finder _FXShowPosixPathInTitle) != "TRUE" ]]
   then
-    defaults write com.apple.finder _FXShowPosixPathInTitle -bool true &&\
+    defaults write com.apple.finder _FXShowPosixPathInTitle -bool TRUE &&\
     killall Finder
   fi
   logk
