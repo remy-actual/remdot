@@ -92,8 +92,8 @@ logn()  { REMDOT_STEP="$*"; printf -- "--> $* "; }
 logk()  { REMDOT_STEP="";   echo "OK"; }
 
 # Check compatible OS X Version
-sw_vers -productVersion | grep $Q -E "^10.(9|10|11)" || {
-  abort "Run Remdot on Mac OS X 10.9/10/11."
+sw_vers -productVersion | grep $Q -E "^10.(9|10|11|12)" || {
+  abort "Run Remdot on Mac OS X 10.9/10/11/12."
 }
 
 # Prohibit running as root
@@ -119,7 +119,7 @@ if [[ -r "${HOME}/.credentials" ]]; then
   . "${HOME}/.credentials"
   logk
 else
-# TODO: read user input if no credentials
+# [TODO]: read user input if no credentials
   abort "\$HOME/.credentials missing or unreadable"
 fi
 
