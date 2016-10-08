@@ -1,5 +1,6 @@
 .DS_Store
 config/vim/.vim/bundle
+config/vim/.vim/.netrwhist
 config/shell/zsh/.zprezto
 node_modules
 npm-debug.log
