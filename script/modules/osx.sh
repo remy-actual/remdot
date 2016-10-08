@@ -23,6 +23,14 @@ config_macosx () {
   defaults write com.apple.finder AppleShowAllFiles TRUE && killall Finder; fi
   logk
 
+  logn "Display full path in Title Bar:"
+  if [[ $(defaults read com.apple.finder _FXShowPosixPathInTitle) != "TRUE" ]]
+  then
+    defaults write com.apple.finder _FXShowPosixPathInTitle -bool true &&\
+    killall Finder
+  fi
+  logk
+
   logn "Enable copy to clipboard from Quick Look view:"
   if [[ $(defaults read com.apple.finder QLEnableTextSelection) != "TRUE" ]]
   then
