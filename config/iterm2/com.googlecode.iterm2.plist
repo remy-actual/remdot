@@ -515,6 +515,8 @@
 	<string></string>
 	<key>NSScrollAnimationEnabled</key>
 	<false/>
+	<key>NSScrollViewShouldScrollUnderTitlebar</key>
+	<false/>
 	<key>NSTableView Columns KeyBingingTable</key>
 	<array>
 		<data>
@@ -526,16 +528,16 @@
 		BAtzdHJlYW10eXBlZIHoA4QBQISEhAhOU1N0cmluZwGEhAhOU09iamVjdACF
 		hAErATGG
 		</data>
-		<string>302</string>
+		<string>322</string>
 	</array>
 	<key>NSTableView Hidden Columns KeyBingingTable</key>
 	<array/>
 	<key>NSTableView Sort Ordering KeyBingingTable</key>
 	<array/>
 	<key>NSWindow Frame Preferences</key>
-	<string>387 1249 924 485 -480 900 1920 1057 </string>
+	<string>449 268 606 456 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
-	<string>-477 905 1913 1048 -480 900 1920 1057 </string>
+	<string>0 16 1440 849 0 0 1440 877 </string>
 	<key>New Bookmarks</key>
 	<array>
 		<dict>
@@ -2005,10 +2007,20 @@
 			<string>/Users/remy</string>
 		</dict>
 	</array>
+	<key>NoSyncConfirmBeta</key>
+	<true/>
+	<key>NoSyncDoNotWarnBeforeMultilinePaste</key>
+	<true/>
+	<key>NoSyncDoNotWarnBeforeMultilinePaste_selection</key>
+	<integer>0</integer>
+	<key>NoSyncInstallationId</key>
+	<string>F78229AC-B387-4085-8964-07545D4068B5</string>
+	<key>NoSyncTimeOfFirstLaunchOfVersionWithTip</key>
+	<real>489435009.95565701</real>
 	<key>NoSyncTimeOfLastPromo</key>
 	<real>484110534.11495399</real>
 	<key>NoSyncTimeOfLastPromoDownload</key>
-	<real>485279745.08778602</real>
+	<real>489395337.08207297</real>
 	<key>OnlyWhenMoreTabs</key>
 	<true/>
 	<key>OpenArrangementAtStartup</key>
@@ -2023,6 +2035,8 @@
 	<false/>
 	<key>PasteFromClipboard</key>
 	<false/>
+	<key>PasteTabToStringTabStopSize</key>
+	<integer>2</integer>
 	<key>PointerActions</key>
 	<dict>
 		<key>Button,1,1,,</key>
@@ -2070,12 +2084,14 @@
 	<integer>3</integer>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
+	<key>SUFeedAlternateAppNameKey</key>
+	<string>iTerm</string>
 	<key>SUFeedURL</key>
-	<string>https://iterm2.com/appcasts/final.xml</string>
+	<string>https://iterm2.com/appcasts/final.xml?shard=17</string>
 	<key>SUHasLaunchedBefore</key>
 	<true/>
 	<key>SULastCheckTime</key>
-	<date>2016-05-18T15:55:12Z</date>
+	<date>2016-07-19T23:15:53Z</date>
 	<key>SavePasteHistory</key>
 	<false/>
 	<key>Secure Input</key>
@@ -2124,7 +2140,7 @@
 	<key>WebKitDefaultFontSize</key>
 	<integer>11</integer>
 	<key>WebKitStandardFont</key>
-	<string>Lucida Grande</string>
+	<string>.AppleSystemUIFont</string>
 	<key>WindowNumber</key>
 	<true/>
 	<key>WindowStyle</key>
@@ -2136,6 +2152,6 @@
 	<key>findRegex_iTerm</key>
 	<false/>
 	<key>iTerm Version</key>
-	<string>2.1.4</string>
+	<string>3.0.4</string>
 </dict>
 </plist>
