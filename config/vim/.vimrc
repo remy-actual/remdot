@@ -73,7 +73,7 @@ call vundle#end()		"keep Plugin commands before here, required
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 """"" KEY BINDINGS """""
-set timeoutlen=600 "reduce window for key press sequences; default is 1000
+set timeoutlen=700 "reduce window for key press sequences; default is 1000
 
 "" File writes ""
 " write to file with single kOBey press
@@ -129,9 +129,9 @@ nnoremap <Leader>w <C-W>>
 " decrease vertical split size
 nnoremap <Leader>q <C-W><
 " increase horizontal split size
-nnoremap <Leader>W <C-W>+
+nnoremap <Leader>a <C-W>+
 " decrease horizontal split size
-nnoremap <Leader>Q <C-W>-
+nnoremap <Leader>z <C-W>-
 " equalize all split sizes
 nnoremap <Leader>e <C-W>=
 " swap top/bottom or left/right split
