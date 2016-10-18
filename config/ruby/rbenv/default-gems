@@ -3,5 +3,6 @@ foreman
 ghi
 pg
 rails
+scss_lint
 sqlint
 thin
