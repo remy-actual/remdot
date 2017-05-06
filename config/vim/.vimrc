@@ -47,6 +47,7 @@ Plugin 'mtscout6/syntastic-local-eslint.vim'
 Plugin 'tpope/vim-speeddating'
 Plugin 'tpope/vim-unimpaired'
 Plugin 'tpope/vim-fugitive'
+Plugin 'dhruvasagar/vim-table-mode'
 call vundle#end()		"keep Plugin commands before here, required
 
 """ Following handled by Plugin Vim Sensible
@@ -79,15 +80,15 @@ set timeoutlen=700 "reduce window for key press sequences; default is 1000
 " write to file with single kOBey press
 noremap <F6> :w<CR>
 " double-tap to write to file and exit
-noremap <F6><F6> :x<CR>
+noremap <F6><F6> :xa<CR>
 
 "" Accessing Vim Documentation ""
 " open help in vertical split window on the right
-" with Ctrl+H
-nnoremap <C-H> :vert bo help 
+" with Ctrl+i
+nnoremap <C-I> :vert bo help 
 " search help for term under cursor
-" with Shift+H
-nnoremap <S-H> K
+" with Shift+I
+nnoremap <S-I> K
 
 """ SOLARIZED """
 "" Toggle between 'Light' and 'Dark' colorscheme
@@ -149,33 +150,35 @@ nnoremap <Leader>- A
 nnoremap <Leader>0 I
 " jump between paired characters
 nnoremap ; %
+" Join lines
+nnoremap mm J
 
 "" EasyMotion Plugin ""
 " with Space+m
 nmap <Leader>m <Plug>(easymotion-prefix)
-" trigger word motion 
+" trigger word motion
 " with Double Leader
 nmap <Leader><Leader> <Plug>(easymotion-w)
 
 " Navigate between windows
 " jump down
-nnoremap <Leader>j <C-W><C-J>
+nnoremap <S-J> <C-W><C-J>
 " jump up
-nnoremap <Leader>k <C-W><C-K>
+nnoremap <S-K> <C-W><C-K>
 " jump right
-nnoremap <Leader>l <C-W><C-L>
+nnoremap <S-L> <C-W><C-L>
 " jump left
-nnoremap <Leader>h <C-W><C-H>
+nnoremap <S-H> <C-W><C-H>
 
 " Navigate between buffers
 " last buffer
-nnoremap <silent> <Leader><Leader>j :bl<CR>
+nnoremap <silent> <Leader>j :bl<CR>
 " first buffer
-nnoremap <silent> <Leader><Leader>k :bf<CR>
+nnoremap <silent> <Leader>k :bf<CR>
 " next buffer
-nnoremap <silent> <Leader><Leader>l :bn<CR>
+nnoremap <silent> <Leader>l :bn<CR>
 " previous buffer
-nnoremap <silent> <Leader><Leader>h :bp<CR> 
+nnoremap <silent> <Leader>h :bp<CR> 
 
 "" History ""
 " map redo to <Leader> undo
@@ -312,19 +315,19 @@ let g:ctrlp_clear_cache_on_exit = 1
 
 "" ag command - The Silver Searcher ""
 if executable('ag')
-	" grep command uses ag
-	set gp=ag\ --nogroup\ --nocolor\ --column
-	set grepformat=%f:%l:%c%m
+  " grep command uses ag
+  set gp=ag\ --nogroup\ --nocolor\ --column
+  set grepformat=%f:%l:%c%m
 
-	" Use ag in CtrlP for listing files.
-	" Lightning fast and respects .gitignore
-	let g:ctrlp_user_command = 'ag %s -i -l --nocolor --nogroup --hidden
-		\ --ignore .git
-		\ --ignore .svn
-		\ --ignore .hg
-		\ --ignore .DS_Store
-		\ --ignore "**/*.pyc"
-		\ -g ""'
+  " Use ag in CtrlP for listing files.
+  " Lightning fast and respects .gitignore
+  let g:ctrlp_user_command = 'ag %s -i -l --nocolor --nogroup --hidden
+    \ --ignore .git
+    \ --ignore .svn
+    \ --ignore .hg
+    \ --ignore .DS_Store
+    \ --ignore "**/*.pyc"
+    \ -g ""'
 endif
 
 
@@ -340,8 +343,8 @@ set wrap colorcolumn=81
 " enable syntax highlighting
 syntax on
 ""  Whitespace ""
-" toggle display of hidden characters 
-nmap <silent> <leader>tt :set nolist!<CR>
+" toggle display of hidden characters
+nmap <silent> <Leader>tt :set nolist!<CR>
 " set display characters with 'listchars'
 set lcs=tab:>-,trail:·,eol:$ list
 
@@ -373,20 +376,35 @@ set statusline+=%{SyntasticStatuslineFlag()}
 set statusline+=%*
 
 let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
+let g:syntastic_loc_list_height = 4
+let g:syntastic_auto_loc_list = 0
 let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
+let g:syntastic_aggregate_errors = 1
 
-" Enable tidy for HTML5, but only when you ask for it. 
+let g:syntastic_error_symbol = '😱'
+let g:syntastic_style_error_symbol = '😒'
+let g:syntastic_warning_symbol = '🤔'
+let g:syntastic_style_warning_symbol = '😎'
+
+highlight link SyntasticErrorSign SignColumn
+highlight link SyntasticWarningSign SignColumn
+highlight link SyntasticStyleErrorSign SignColumn
+highlight link SyntasticStyleWarningSign SignColumn
+
+" Enable tidy for HTML5, but only when you ask for it.
 let g:syntastic_html_tidy_exec = 'tidy'
 let syntastic_mode_map = { 'passive_filetypes': ['html'] }
 
 " Enable checkers by filetype
 let g:syntastic_javascript_checkers = ['eslint']
-" prefer locally installed npm project package over global
+" locally installed npm project package preferred over global via vim plugin
 " ref: https://github.com/mtscout6/syntastic-local-eslint.vim
 " let g:syntastic_sql_checkers = ['sqlint'] " default
+let g:syntastic_scss_checkers = ['scss_lint']
+" [TODO] configure and add ['stylelint', 'scss_lint'] later
+" ['sass','scss_lint'] default
+" let g:syntastic_scss_scss_lint_args = ""preprocess_command: ""sed '1,2s/---//'"
 let g:syntastic_text_checkers = ['atdtool']
 let g:syntastic_vim_checkers = ['vint'] " vint instead of vimlint
 " let g:syntastic_yaml_checkers = ['jsyaml'] " default
-
